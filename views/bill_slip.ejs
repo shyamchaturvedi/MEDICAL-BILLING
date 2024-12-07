@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bill Slip</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #333;
+        }
+        .customer-info, .bill-info {
+            margin-bottom: 20px;
+        }
+        .label {
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .total {
+            font-weight: bold;
+            text-align: right;
+        }
+        .amount-in-words {
+            margin-top: 20px;
+            font-style: italic;
+        }
+        .signature {
+            margin-top: 40px;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <h1>Bill Slip</h1>
+    <div class="customer-info">
+        <p><span class="label">Customer Name:</span> <%= bill.customerName %></p>
+        <p><span class="label">Bill No:</span> <%= bill.billNumber %></p>
+        <p><span class="label">Bill Date:</span> <%= new Date().toLocaleDateString() %></p>
+    </div>
+
+    <h2>Particulars</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Quantity</th>
+                <th>MRP (INR)</th>
+                <th>Total (INR)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% bill.items.forEach(item => { %>
+                <tr>
+                    <td><%= item.name %></td>
+                    <td><%= item.quantity %></td>
+                    <td><%= item.mrp %></td>
+                    <td><%= (item.mrp * item.quantity).toFixed(2) %></td>
+                </tr>
+            <% }); %>
+        </tbody>
+    </table>
+
+    <div class="total">
+        <h3>Total Amount: <span><%= bill.totalAmount.toFixed(2) %></span></h3>
+    </div>
+
+    <div class="amount-in-words">
+        <p>Amount in Words: <%= convertToWords(bill.totalAmount) %></p>
+    </div>
+
+    <div class="signature">
+        <p>For Pharma Management System</p>
+        <p>Authorized Signature</p>
+    </div>
+    
+    <script>
+        function convertToWords(amount) {
+            if (amount === 0) return "Zero Only";
+
+            const words = [];
+            const units = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", 
+                           "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", 
+                           "Eighteen", "Nineteen"];
+            const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", 
+                           "Ninety"];
+            const thousands = ["", "Thousand", "Million", "Billion"];
+
+            let number = Math.floor(amount);
+            let thousandIndex = 0;
+
+            while (number > 0) {
+                const chunk = number % 1000;
+                if (chunk > 0) {
+                    const chunkWords = [];
+                    if (chunk >= 100) {
+                        chunkWords.push(units[Math.floor(chunk / 100)] + " Hundred");
+                    }
+                    const remainder = chunk % 100;
+                    if (remainder < 20) {
+                        chunkWords.push(units[remainder]);
+                    } else {
+                        chunkWords.push(tens[Math.floor(remainder / 10)]);
+                        chunkWords.push(units[remainder % 10]);
+                    }
+                    words.unshift(chunkWords.join(" ") + " " + thousands[thousandIndex]);
+                }
+
+                number = Math.floor(number / 1000);
+                thousandIndex++;
+            }
+
+            return words.join(", ") + " Only";
+        }
+    </script>
+</body>
+</html>

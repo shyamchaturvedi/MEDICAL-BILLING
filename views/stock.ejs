@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medicine Stock</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+        th { background-color: #f4f4f4; }
+        h1 { color: #007BFF; }
+        a { display: inline-block; margin: 20px 0; padding: 10px; background-color: #007BFF; color: white; text-decoration: none; border-radius: 5px; }
+        a:hover { background-color: #0056b3; }
+        .edit-link {
+            display: inline-block; 
+            padding: 5px 10px; 
+            background-color: #28a745; 
+            color: white; 
+            border-radius: 5px; 
+            text-decoration: none;
+        }
+        .edit-link:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <h1>Medicine Stock</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Company</th>
+                <th>Composition</th>
+                <th>Packing</th>
+                <th>MRP</th>
+                <th>S.Rate</th>
+                <th>Unit</th>
+                <th>Min Level</th>
+                <th>Re-Order Level</th>
+                <th>VAT</th>
+                <th>Unit/Packing</th>
+                <th>Supplier</th>
+                <th>VAT A/C</th>
+                <th>Rate/Packing</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% medicines.forEach(function(medicine) { %>
+                <tr>
+                    <td><%= medicine.name %></td>
+                    <td><%= medicine.category %></td>
+                    <td><%= medicine.company %></td>
+                    <td><%= medicine.composition %></td>
+                    <td><%= medicine.packing %></td>
+                    <td><%= medicine.mrp %></td>
+                    <td><%= medicine.s_rate %></td>
+                    <td><%= medicine.unit %></td>
+                    <td><%= medicine.min_level %></td>
+                    <td><%= medicine.reorder_level %></td>
+                    <td><%= medicine.vat %></td>
+                    <td><%= medicine.unit_packing %></td>
+                    <td><%= medicine.supplier %></td>
+                    <td><%= medicine.vat_account %></td>
+                    <td><%= medicine.rate_packing %></td>
+                    <td>
+                        <a href="/edit-medicine/<%= medicine.id %>" class="edit-link">Edit</a>
+                    </td>
+                </tr>
+            <% }); %>
+        </tbody>
+    </table>
+    <a href="/add-medicine">Add More Medicines</a>
+</body>
+</html>
