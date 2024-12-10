@@ -4,75 +4,96 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Medicine Stock</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
-        body { font-family: 'Arial', sans-serif; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
-        th { background-color: #f4f4f4; }
-        h1 { color: #007BFF; }
-        a { display: inline-block; margin: 20px 0; padding: 10px; background-color: #007BFF; color: white; text-decoration: none; border-radius: 5px; }
-        a:hover { background-color: #0056b3; }
-        .edit-link {
-            display: inline-block; 
-            padding: 5px 10px; 
-            background-color: #28a745; 
-            color: white; 
-            border-radius: 5px; 
-            text-decoration: none;
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            margin: 0;
+            padding: 20px;
+            color: #333;
         }
-        .edit-link:hover {
-            background-color: #218838;
+        h1 {
+            text-align: center;
+            color: #0066cc;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #0066cc;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        .message {
+            color: red;
+            text-align: center;
+            margin: 10px 0;
+        }
+        .edit-button {
+            background-color: #ffc107;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
     <h1>Medicine Stock</h1>
+
+    <% if (message) { %>
+        <div class="message"><%= message %></div>
+    <% } %>
+
     <table>
         <thead>
             <tr>
-                <th>Name</th>
-                <th>Category</th>
-                <th>Company</th>
-                <th>Composition</th>
-                <th>Packing</th>
+                <th>Medicine ID</th>
+                <th>Rack No.</th>
+                <th>Medicine Name</th>
+                <th>Generic Name</th>
                 <th>MRP</th>
-                <th>S.Rate</th>
-                <th>Unit</th>
-                <th>Min Level</th>
-                <th>Re-Order Level</th>
-                <th>VAT</th>
-                <th>Unit/Packing</th>
+                <th>Sell Price</th>
+                <th>Expiry Date</th>
+                <th>Quantity</th>
                 <th>Supplier</th>
-                <th>VAT A/C</th>
-                <th>Rate/Packing</th>
-                <th>Actions</th>
+                <th>Action</th>
             </tr>
         </thead>
         <tbody>
-            <% medicines.forEach(function(medicine) { %>
+            <% medicines.forEach(medicine => { %>
                 <tr>
-                    <td><%= medicine.name %></td>
-                    <td><%= medicine.category %></td>
-                    <td><%= medicine.company %></td>
-                    <td><%= medicine.composition %></td>
-                    <td><%= medicine.packing %></td>
-                    <td><%= medicine.mrp %></td>
-                    <td><%= medicine.s_rate %></td>
-                    <td><%= medicine.unit %></td>
-                    <td><%= medicine.min_level %></td>
-                    <td><%= medicine.reorder_level %></td>
-                    <td><%= medicine.vat %></td>
-                    <td><%= medicine.unit_packing %></td>
+                    <td><%= medicine.medicineId %></td>
+                    <td><%= medicine.rackNo %></td>
+                    <td><%= medicine.medicineName %></td>
+                    <td><%= medicine.genericName %></td>
+                    <td><%= medicine.mrp.toFixed(2) %></td>
+                    <td><%= medicine.sellPrice.toFixed(2) %></td>
+                    <td><%= new Date(medicine.expiryDate).toLocaleDateString() %></td>
+                    <td><%= medicine.quantity %></td>
                     <td><%= medicine.supplier %></td>
-                    <td><%= medicine.vat_account %></td>
-                    <td><%= medicine.rate_packing %></td>
                     <td>
-                        <a href="/edit-medicine/<%= medicine.id %>" class="edit-link">Edit</a>
+                        <form action="/edit-medicine/<%= medicine._id %>" method="get">
+                            <button type="submit" class="edit-button">Edit</button>
+                        </form>
                     </td>
                 </tr>
             <% }); %>
         </tbody>
     </table>
-    <a href="/add-medicine">Add More Medicines</a>
 </body>
 </html>

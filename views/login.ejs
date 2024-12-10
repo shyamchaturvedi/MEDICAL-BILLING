@@ -3,114 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>Login Page</title>
     <style>
         body {
-            background-color: #f0f2f5;
             font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+            background-color: #f4f4f4;
             margin: 0;
-        }
-
-        .container {
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            max-width: 400px;
-            width: 100%;
-            padding: 20px;
-        }
-
-        h2 {
-            text-align: center;
-            margin-bottom: 20px;
+            padding: 0;
             color: #333;
+            text-align: center;
         }
-
-        .input-group {
-            margin-bottom: 15px;
+        .container {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-
-        .input-group label {
+        h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: #dd0d0d;
+        }
+        h4 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #555;
+        }
+        label {
             display: block;
             margin-bottom: 5px;
-            color: #666;
+            text-align: left;
         }
-
-        .input-group input {
+        input[type="text"],
+        input[type="password"] {
             width: 100%;
             padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            transition: border-color 0.3s;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
         }
-
-        .input-group input:focus {
-            border-color: #008cba;
-            outline: none;
-        }
-
-        .btn {
-            background-color: #008cba;
+        input[type="submit"] {
+            background-color: #dd0d0d;
             color: white;
             border: none;
-            padding: 10px;
-            width: 100%;
-            border-radius: 5px;
+            padding: 10px 15px;
+            border-radius: 4px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            font-size: 16px;
         }
-
-        .btn:hover {
-            background-color: #005f8a;
+        input[type="submit"]:hover {
+            background-color: #c70000;
         }
-
-        .toggle-link {
-            text-align: center;
+        .register-link {
+            display: block;
             margin-top: 15px;
-        }
-
-        .toggle-link a {
-            color: #008cba;
+            color: #06f;
             text-decoration: none;
         }
-
-        .toggle-link a:hover {
+        .register-link:hover {
             text-decoration: underline;
         }
-
-        .error {
+        .toggle-password {
+            display: inline-block;
+            cursor: pointer;
+            margin-top: -30px;
+            margin-left: 5px;
+        }
+        .error-message {
             color: red;
-            text-align: center;
-            margin-top: 10px;
+            margin-top: 15px;
         }
     </style>
 </head>
 <body>
-
-<div class="container">
-    <h2>Login</h2>
-    <form action="/login" method="POST">
-        <div class="input-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email" placeholder="Enter your email" required>
-        </div>
-        <div class="input-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" placeholder="Enter your password" required>
-        </div>
-        <button type="submit" class="btn">Login</button>
-        <% if (error) { %>
-            <div class="error"><%= error %></div>
+    <div class="container">
+        <h1>Login Page</h1>
+        <h4>Please enter your credentials</h4>
+        <% if (message) { %>
+            <div class="error-message"><%= message %></div> <!-- Display server-side error messages -->
         <% } %>
-    </form>
-    <div class="toggle-link">
-        Don't have an account? <a href="/signup">Sign Up</a>
+        <form action="/submit_login" method="post" onsubmit="return validateForm()">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required aria-describedby="username-help">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required aria-describedby="password-help">
+            <span class="toggle-password" title="Show/Hide Password">👁️</span>
+            <input type="submit" value="Submit">
+            <a class="register-link" href="/register">Don't have an account? Register</a>
+        </form>
     </div>
-</div>
 
+    <script>
+        // Function to toggle password visibility
+        document.querySelector('.toggle-password').addEventListener('click', function () {
+            const passwordField = document.getElementById('password');
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                this.textContent = '🙈'; // Change icon to indicate password is visible
+            } else {
+                passwordField.type = 'password';
+                this.textContent = '👁️'; // Change icon back to default
+            }
+        });
+        
+        // Form validation function
+        function validateForm() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.querySelector('.error-message');
+
+            // Reset error message display
+            errorMessage.style.display = 'none'; 
+            errorMessage.innerHTML = '';
+
+            // Validate inputs
+            if (username.trim() === "" || password.trim() === "") {
+                errorMessage.innerHTML = "Username and Password are required.";
+                errorMessage.style.display = 'block';
+                return false; // Prevent form submission
+            }
+            return true; // Allow form submission
+        }
+    </script>
 </body>
 </html>

@@ -3,170 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
+    <title>Medical Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         body {
-            background-image: url('sidebar.jpg'); /* Background for the body */
-            background-size: cover; 
-            background-position: center; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
             margin: 0;
-            display: flex;
+            padding: 0;
+            color: #333;
         }
-
-        .sidebar {
-            background-color: rgba(167, 196, 218, 0.9); /* Semi-transparent to show the image underneath */
-            color: rgb(33, 37, 41); /* Dark text color */
-            width: 250px;
-            min-height: 100vh; 
-            padding: 20px;
-            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.3); 
-            transition: width 0.3s; 
-            text-align: center; /* Center sidebar text */
-            position: relative; /* Positioning for overlay */
-        }
-
-        .sidebar h2 {
-            font-size: 24px;
-            margin-bottom: 20px;
-            color: #fff; /* White text for the title */
-            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5); /* Shadow for better visibility */
-        }
-
-        .sidebar a {
-            color: rgb(33, 37, 41); /* Dark text for links */
-            text-decoration: none;
-            display: block;
-            padding: 12px 15px;
-            border-radius: 5px;
-            transition: background-color 0.3s, color 0.3s;
-            margin-bottom: 10px; /* Space between links */
-        }
-
-        .sidebar a:hover {
-            background-color: rgba(33, 37, 41, 0.2); /* Subtle hover effect */
-            color: #000; /* Darker text on hover */
-        }
-
-        .content {
-            flex: 1; 
-            display: flex;
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            padding: 20px;
-            position: relative; 
-            z-index: 1; 
-        }
-
-        .heading {
-            position: absolute; 
-            top: 20px; 
-            left: 50%; 
-            transform: translateX(-50%);
-            color: #fff; 
-            font-size: 36px; 
-            text-align: center; 
-            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
-        }
-
-        .container {
-            background-color: rgba(255, 255, 255, 0.9); /* Soft white color for the container */
-            border-radius: 15px; 
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-            padding: 40px;
-            text-align: center;
-            width: 320px; 
-            margin-top: 80px; 
-        }
-
-        h2 {
-            margin-bottom: 15px;
-            font-size: 22px; 
-            color: rgb(33, 37, 41); /* Dark text color */
-        }
-
-        p {
-            color: #666; 
-        }
-
-        .btn {
-            background-color: #007bff; 
+        .header {
+            background-color: #0066cc;
             color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            display: flex;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .nav {
+            width: 200px;
+            border-right: 1px solid #ccc;
+            padding-right: 20px;
+        }
+        .nav a {
+            display: block;
+            padding: 10px;
+            margin: 5px 0;
+            text-decoration: none;
+            color: #0066cc;
+        }
+        .nav a:hover {
+            background-color: #f2f2f2;
+            border-radius: 5px;
+        }
+        .nav .logout-btn {
+            background-color: #cc0000;
+            color: white;
+            padding: 10px 15px;
             border: none;
-            padding: 12px 25px;
             border-radius: 5px;
             cursor: pointer;
-            transition: background-color 0.3s, transform 0.2s; 
-            font-size: 16px; 
+            margin-top: 20px;
+            text-align: center;
         }
-
-        .btn:hover {
-            background-color: #0056b3; 
-            transform: translateY(-2px); 
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); 
+        .nav .logout-btn:hover {
+            background-color: #990000;
         }
-
-        .logout-btn {
-            margin-top: 20px; 
-            background-color: #dc3545; /* Logout button specific color */
-            padding: 10px 20px; /* Adjust padding */
-            transition: background-color 0.3s; /* Smooth transition for hover */
+        .content {
+            flex-grow: 1;
+            padding-left: 20px;
         }
-
-        .logout-btn:hover {
-            background-color: #c82333; /* Darker red on hover */
+        .card {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
-
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 200px; 
-            }
-
-            .container {
-                width: 90%; 
-                margin-top: 60px; 
-            }
+        .summary-cards {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
         }
-
-        @media (max-width: 480px) {
-            .sidebar {
-                width: 150px; 
-            }
-
-            .heading {
-                font-size: 28px; 
-            }
-
-            .container {
-                padding: 20px; 
-            }
+        .summary-card {
+            flex: 1;
+            background-color: #0066cc;
+            color: white;
+            padding: 20px;
+            margin-right: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .summary-card:last-child {
+            margin-right: 0;
+        }
+        .message {
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #e7f3fe;
+            color: #31708f;
+            border: 1px solid #bce8f1;
+            border-radius: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #ccc;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .total {
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-
-<div class="sidebar">
-    <h2>Dashboard Menu</h2>
-    <a href="/add-medicine">Add Medicine</a> <!-- Link to Add Medicine page -->
-    <a href="/medicines">View Stock</a> <!-- Link to View Stock page -->
-    <a href="/bill">Generate Bill</a> <!-- Link to Bill page -->
-    <a href="#option1">Option 1</a>
-    <a href="#option2">Option 2</a>
-    <a href="#option3">Option 3</a>
-    <a href="#option4">Option 4</a>
-    <hr> <!-- Optionally adding a horizontal line for separation -->
-    <a href="/logout" class="logout-btn">Logout</a> <!-- Logout link -->
-</div>
-
-<div class="content">
-    <div class="heading">Hospital Billing System</div>
-    <div class="container">
-        <h2>Welcome, <%= user.email %>!</h2>
-        <p>You are now logged in to the system.</p>
-        <a href="/logout" class="btn">Logout</a>
+    <div class="header">
+        <h1>Medical Dashboard</h1>
+        <p>Welcome, <%= user %>!</p>
     </div>
-</div>
 
+    <div class="container">
+        <div class="nav">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/add-medicine">Add Medicine</a>
+            <a href="/stock">Stock</a>
+            <a href="/reports">Reports</a>
+            <button class="logout-btn" onclick="document.getElementById('logoutForm').submit();">Logout</button>
+        </div>
+           
+    </div>
+    <form id="logoutForm" action="/logout" method="post" style="display: none;"></form>
 </body>
 </html>

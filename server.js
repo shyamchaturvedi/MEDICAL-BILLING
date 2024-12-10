@@ -1,194 +1,216 @@
 const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
+const bcrypt = require('bcrypt');
+const dotenv = require('dotenv');
 const session = require('express-session');
+const mongoose = require('mongoose');
 
+dotenv.config();
+
+// Connect to MongoDB
+mongoose.connect('mongodb://127.0.0.1:27017/pharmacyDB', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+}).then(() => {
+    console.log('MongoDB connected successfully');
+}).catch(err => {
+    console.error('MongoDB connection error:', err);
+});
+
+// Create Mongoose Schemas
+const userSchema = new mongoose.Schema({
+    username: { type: String, required: true, unique: true },
+    password: { type: String, required: true }
+});
+
+const medicineSchema = new mongoose.Schema({
+    medicineId: { type: String, required: true, unique: true },
+    rackNo: { type: String, required: true },
+    medicineName: { type: String, required: true },
+    genericName: { type: String, required: true },
+    mrp: { type: Number, required: true },
+    sellPrice: { type: Number, required: true },
+    expiryDate: { type: Date, required: true },
+    quantity: { type: Number, required: true, min: 0 },
+    supplierPrice: { type: Number, required: true },
+    supplier: { type: String, required: true },
+});
+
+// Create Mongoose Models
+const User = mongoose.model('User', userSchema);
+const Medicine = mongoose.model('Medicine', medicineSchema);
+
+// Create Express app
 const app = express();
-const PORT = process.env.PORT || 3000;
+const port = 3000;
 
-// Set EJS as the templating engine
+// Set the view engine to EJS
 app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 
-// Serve static files from the 'public' directory
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Middleware for parsing request body
+// Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
-
-// Session middleware
 app.use(session({
-    secret: 'mySecret', // Use a secure random string in production
+    secret: process.env.SESSION_SECRET || 'your_secret_key',
     resave: false,
-    saveUninitialized: true
+    saveUninitialized: true,
 }));
 
-// In-memory data stores
-let users = {}; // Store registered users
-let medicines = [ // Sample medicines with unique IDs
-    { id: '1', name: 'Ranitidine Hcl Tablets', mrp: 30 },
-    { id: '2', name: 'Paracetamol', mrp: 10 },
-    { id: '3', name: 'Ibuprofen', mrp: 20 },
-    { id: '4', name: 'Cetrizine', mrp: 15 }
-];
-let slipNumber = 1; // Track slip numbers for bills
-let bills = []; // Store bills
-
-// Home route that redirects to login
+// Index page (landing page)
 app.get('/', (req, res) => {
-    res.redirect('/login');
+    res.render('index');
 });
 
-// Login route
-app.get('/login', (req, res) => {
-    res.render('login', { error: req.session.error || null });
-    req.session.error = null; // Reset error on the login page
-});
-
-// Signup route
-app.get('/signup', (req, res) => {
-    res.render('signup', { error: req.session.error || null });
-});
-
-// Handle signup logic
-app.post('/signup', (req, res) => {
-    const { email, password } = req.body;
-
-    // Simple validation
-    if (users[email]) {
-        req.session.error = 'User already exists!';
-        return res.redirect('/signup');
-    }
-
-    // Register user
-    users[email] = { email, password }; // Store user info, hash the password in production
-    res.redirect('/login');
-});
-
-// Handle login logic
-app.post('/login', (req, res) => {
-    const { email, password } = req.body;
-
-    // Validate user credentials
-    if (users[email] && users[email].password === password) {
-        req.session.user = users[email]; // Save user in session
-        return res.redirect('/dashboard');
-    } else {
-        req.session.error = 'Invalid email or password';
-        return res.redirect('/login');
-    }
-});
-
-// Dashboard route
+// Dashboard page
 app.get('/dashboard', (req, res) => {
     if (!req.session.user) {
-        return res.redirect('/login'); // Redirect to login if not authenticated
+        return res.redirect('/login');
     }
-    res.render('dashboard', { user: req.session.user, medicines }); // Pass user info and medicines
+    res.render('dashboard', { user: req.session.user });
 });
 
-// Add Medicine route (GET)
+// Login page
+app.get('/login', (req, res) => {
+    res.render('login', { message: req.session.message });
+    req.session.message = ""; // Clear message after displaying
+});
+
+// Registration page
+app.get('/register', (req, res) => {
+    res.render('register', { message: req.session.message });
+    req.session.message = ""; // Clear message after displaying
+});
+
+// Medicine stock page
+app.get('/stock', async (req, res) => {
+    if (!req.session.user) {
+        return res.redirect('/login');
+    }
+    const medicines = await Medicine.find();
+    res.render('stock', { user: req.session.user, medicines, message: req.session.message || '' });
+    req.session.message = ""; // Clear message after displaying (if it was set).
+});
+
+// Add medicine page
 app.get('/add-medicine', (req, res) => {
     if (!req.session.user) {
-        return res.redirect('/login'); // Redirect if not authenticated
+        return res.redirect('/login');
     }
-    res.render('add_medicine'); // Render Add Medicine form
+    res.render('add-medicine', { message: req.session.message });
+    req.session.message = ""; // Clear message after displaying
 });
 
-// Handle Add Medicine logic (POST)
-app.post('/add-medicine', (req, res) => {
-    const medicine = { id: String(medicines.length + 1), ...req.body }; // Create new medicine with unique ID
-    medicines.push(medicine); // Save medicine
+// Login submission route
+app.post('/submit_login', async (req, res) => {
+    const { username, password } = req.body;
+    const user = await User.findOne({ username });
 
-    const currentSlipNumber = slipNumber++; // Update slip number
-
-    // Render the slip for the added medicine
-    res.render('slip', { slipNumber: currentSlipNumber, addedMedicine: medicine });
+    // Validate login credentials
+    if (user && bcrypt.compareSync(password, user.password)) {
+        req.session.user = username;
+        res.redirect('/dashboard');
+    } else {
+        req.session.message = 'Invalid credentials';
+        res.redirect('/login');
+    }
 });
 
-// View all medicines
-app.get('/medicines', (req, res) => {
+// Registration submission route
+app.post('/submit_register', async (req, res) => {
+    const { username, password, confirmPassword } = req.body;
+
+    if (username && password && password === confirmPassword) {
+        if (await User.exists({ username })) {
+            req.session.message = 'Username already exists';
+            return res.redirect('/register');
+        }
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = new User({ username, password: hashedPassword });
+        await newUser.save();
+        req.session.message = 'Registration successful! Please log in.';
+        res.redirect('/login');
+    } else {
+        req.session.message = 'Invalid registration data';
+        res.redirect('/register');
+    }
+});
+
+// Add medicine submission route
+app.post('/add-medicine', async (req, res) => {
+    const { rackNo, medicineName, genericName, mrp, sellPrice, expiryDate, quantity, supplierPrice, supplier } = req.body;
+
+    // Generate a unique medicine ID
+    const medicines = await Medicine.find();
+    const medicineCount = medicines.length + 1; // Count the existing medicines
+    const medicineId = `AMC${String(medicineCount).padStart(4, '0')}`; // Generate ID like AMC0001
+
+    // Create a new medicine entry
+    const newMedicine = new Medicine({
+        medicineId,
+        rackNo,
+        medicineName,
+        genericName,
+        mrp,
+        sellPrice,
+        expiryDate,
+        quantity,
+        supplierPrice,
+        supplier
+    });
+
+    await newMedicine.save();
+    req.session.message = 'Medicine added successfully!';
+    res.redirect('/add-medicine');
+});
+
+// Edit medicine page
+app.get('/edit-medicine/:id', async (req, res) => {
     if (!req.session.user) {
-        return res.redirect('/login'); // Redirect if not authenticated
+        return res.redirect('/login');
     }
-    res.render('stock', { medicines }); // Render stock with medicines
+    const medicine = await Medicine.findById(req.params.id);
+    if (!medicine) {
+        req.session.message = "Medicine not found.";
+        return res.redirect('/stock');
+    }
+    res.render('edit-medicine', { medicine, message: req.session.message });
+    req.session.message = ""; // Clear message after using
 });
 
-// Bill route
-app.get('/bill', (req, res) => {
-    if (!req.session.user) {
-        return res.redirect('/login'); // Redirect if not authenticated
-    }
-    res.render('bill', { slipNumber, medicines }); // Pass slipNumber and medicines to the bill page
-});
+// Update medicine submission route
+app.post('/update-medicine/:id', async (req, res) => {
+    const { rackNo, medicineName, genericName, mrp, sellPrice, expiryDate, quantity, supplierPrice, supplier } = req.body;
 
-// Handle Bill Submission
-app.post('/submit-bill', (req, res) => {
-    const { customerName, billNumber, items } = req.body;
-
-    if (!items) {
-        req.session.error = 'Items cannot be empty.';
-        return res.redirect('/bill');
-    }
-
-    let billItems;
-    try {
-        billItems = items.split(';').map(item => JSON.parse(item)).filter(item => item.name); // Parse items
-    } catch (error) {
-        req.session.error = 'Invalid items JSON format.';
-        return res.redirect('/bill');
-    }
-
-    const totalAmount = billItems.reduce((total, item) => total + (item.mrp * (item.quantity || 0)), 0);
-
-    const bill = {
-        customerName,
-        billNumber,
-        items: billItems,
-        totalAmount
-    };
-
-    bills.push(bill); // Store the generated bill
-
-    res.render('bill_slip', { bill }); // Display the bill slip
+    // Update the medicine entry
+    await Medicine.findByIdAndUpdate(req.params.id, {
+        rackNo,
+        medicineName,
+        genericName,
+        mrp,
+        sellPrice,
+        expiryDate,
+        quantity,
+        supplierPrice,
+        supplier
+    });
+    
+    req.session.message = "Medicine updated successfully!";
+    res.redirect('/stock');
 });
 
 // Logout route
-app.get('/logout', (req, res) => {
+app.post('/logout', (req, res) => {
     req.session.destroy(err => {
         if (err) {
-            return res.redirect('/dashboard'); // Handle error if needed
+            console.error(err);
+            return res.redirect('/');
         }
-        res.redirect('/login'); // Redirect to login after logout
+        res.redirect('/');
     });
 });
 
-// Edit Medicine Route (GET)
-app.get('/edit-medicine/:id', (req, res) => {
-    const medicineId = req.params.id;
-    const medicine = medicines.find(med => med.id === medicineId);
-
-    if (!medicine) {
-        return res.status(404).send('Medicine not found'); // Handle not found case
-    }
-
-    res.render('edit_medicine', { medicine }); // Render edit form with specific medicine data
-});
-
-// Handle Edit Medicine logic (POST)
-app.post('/edit-medicine/:id', (req, res) => {
-    const medicineId = req.params.id;
-    const updatedMedicine = req.body;
-
-    const index = medicines.findIndex(med => med.id === medicineId);
-    if (index !== -1) {
-        medicines[index] = { ...medicines[index], ...updatedMedicine }; // Update existing medicine
-        res.redirect('/medicines'); // Redirect back to medicines list
-    } else {
-        res.status(404).send('Medicine not found'); // Handle not found case
-    }
-});
-
 // Start the server
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+app.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
 });
