@@ -37,9 +37,18 @@ const medicineSchema = new mongoose.Schema({
     supplier: { type: String, required: true },
 });
 
+const transactionSchema = new mongoose.Schema({
+    medicineId: { type: String, required: true },
+    quantitySold: { type: Number, required: true },
+    customerName: { type: String, required: true },
+    customerMobile: { type: String, required: true },
+    date: { type: Date, default: Date.now },
+});
+
 // Create Mongoose Models
 const User = mongoose.model('User', userSchema);
 const Medicine = mongoose.model('Medicine', medicineSchema);
+const Transaction = mongoose.model('Transaction', transactionSchema);
 
 // Create Express app
 const app = express();
@@ -89,7 +98,7 @@ app.get('/stock', async (req, res) => {
     }
     const medicines = await Medicine.find();
     res.render('stock', { user: req.session.user, medicines, message: req.session.message || '' });
-    req.session.message = ""; // Clear message after displaying (if it was set).
+    req.session.message = ""; // Clear message after displaying
 });
 
 // Add medicine page
@@ -142,10 +151,9 @@ app.post('/add-medicine', async (req, res) => {
 
     // Generate a unique medicine ID
     const medicines = await Medicine.find();
-    const medicineCount = medicines.length + 1; // Count the existing medicines
-    const medicineId = `AMC${String(medicineCount).padStart(4, '0')}`; // Generate ID like AMC0001
+    const medicineCount = medicines.length + 1;
+    const medicineId = `AMC${String(medicineCount).padStart(4, '0')}`;
 
-    // Create a new medicine entry
     const newMedicine = new Medicine({
         medicineId,
         rackNo,
@@ -182,7 +190,6 @@ app.get('/edit-medicine/:id', async (req, res) => {
 app.post('/update-medicine/:id', async (req, res) => {
     const { rackNo, medicineName, genericName, mrp, sellPrice, expiryDate, quantity, supplierPrice, supplier } = req.body;
 
-    // Update the medicine entry
     await Medicine.findByIdAndUpdate(req.params.id, {
         rackNo,
         medicineName,
@@ -197,6 +204,59 @@ app.post('/update-medicine/:id', async (req, res) => {
     
     req.session.message = "Medicine updated successfully!";
     res.redirect('/stock');
+});
+
+// Sell medicine page
+app.get('/sell-medicine', async (req, res) => {
+    if (!req.session.user) {
+        return res.redirect('/login');
+    }
+    const medicines = await Medicine.find();
+    res.render('sell-medicine', { user: req.session.user, medicines, message: req.session.message || '' });
+    req.session.message = ""; // Clear message after displaying
+});
+
+// Sell medicine submission route
+app.post('/sell-medicine', async (req, res) => {
+    const { medicineId, quantitySold, customerName, customerMobile } = req.body;
+
+    // Validate the inputs
+    if (!medicineId || !quantitySold || quantitySold <= 0 || !customerName || !customerMobile) {
+        return res.json({ success: false, message: 'Please provide all required details.' });
+    }
+
+    const medicine = await Medicine.findOne({ medicineId });
+    if (!medicine) {
+        return res.json({ success: false, message: 'Medicine not found.' });
+    }
+
+    // Check if sufficient quantity is available
+    if (medicine.quantity < quantitySold) {
+        return res.json({ success: false, message: 'Insufficient quantity available.' });
+    }
+
+    // Deduct the quantity sold and save the updated medicine
+    medicine.quantity -= quantitySold;
+    await medicine.save();
+
+    // Calculate total sold amount
+    const totalAmount = (medicine.sellPrice * quantitySold) + (5 / 100 * medicine.sellPrice * quantitySold); // Assuming GST of 5%
+    
+    // Log the transaction
+    const newTransaction = new Transaction({
+        medicineId,
+        quantitySold,
+        customerName,
+        customerMobile
+    });
+    await newTransaction.save();  
+
+    res.json({ 
+        success: true,
+        medicineName: medicine.medicineName,
+        pricePerUnit: medicine.sellPrice,
+        amount: totalAmount
+    });
 });
 
 // Logout route

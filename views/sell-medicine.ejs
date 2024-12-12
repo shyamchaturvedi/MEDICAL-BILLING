@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medicine Billing</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #fff;
+        }
+        h1, h2, h3 {
+            color: #333;
+            margin: 10px 0;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+        }
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: calc(100% - 22px);
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: 10mm;
+            }
+            body {
+                padding: 0;
+            }
+            h1 {
+                font-size: 22px;
+            }
+            h2, h3 {
+                font-size: 18px;
+            }
+            button {
+                display: none; /* Hide all buttons when printing */
+            }
+            #bill {
+                display: block;
+                margin-top: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Medicine Billing</h1>
+
+    <form id="customerForm">
+        <h2>Customer & Doctor Information</h2>
+        <div class="form-group">
+            <label for="customerName">Customer Name:</label>
+            <input type="text" name="customerName" id="customerName" required>
+        </div>
+
+        <div class="form-group">
+            <label for="customerMobile">Customer Mobile:</label>
+            <input type="text" name="customerMobile" id="customerMobile" required>
+        </div>
+
+        <div class="form-group">
+            <label for="customerAge">Customer Age:</label>
+            <input type="number" name="customerAge" id="customerAge" min="1" required>
+        </div>
+
+        <div class="form-group">
+            <label for="doctorName">Doctor's Name:</label>
+            <input type="text" name="doctorName" id="doctorName" required>
+        </div>
+
+        <button type="button" id="nextStepButton">Continue to Medicine Selection</button>
+    </form>
+
+    <form action="/sell-medicine" method="POST" id="sellForm" style="display: none;">
+        <h2>Medicine Selection</h2>
+        <div class="form-group">
+            <label for="searchMedicine">Search Medicine:</label>
+            <input type="text" id="searchMedicine" placeholder="Type to search..." onkeyup="filterMedicines()">
+        </div>
+        
+        <div class="form-group">
+            <label for="medicineId">Select Medicine:</label>
+            <select name="medicineId" id="medicineId" required onchange="updatePrice()">
+                <option value="" disabled selected>Choose a medicine</option>
+                <% medicines.forEach(function(medicine) { %>
+                    <option value="<%= medicine.medicineId %>" data-price="<%= medicine.sellPrice %>" class="medicine-option">
+                        <%= medicine.medicineName %> (Available: <%= medicine.quantity %>)
+                    </option>
+                <% }); %>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="quantitySold">Quantity Sold:</label>
+            <input type="number" name="quantitySold" id="quantitySold" min="1" required>
+        </div>
+
+        <button type="submit">Add Medicine to Bill</button>
+    </form>
+
+    <div class="bill" id="bill" style="display: none;">
+        <h3>Bill Details</h3>
+        <p><strong>Customer Name:</strong> <span id="billCustomerName"></span></p>
+        <p><strong>Customer Mobile:</strong> <span id="billCustomerMobile"></span></p>
+        <p><strong>Customer Age:</strong> <span id="billCustomerAge"></span></p>
+        <p><strong>Doctor's Name:</strong> <span id="billDoctorName"></span></p>
+
+        <table id="billTable">
+            <thead>
+                <tr>
+                    <th>Sl. No.</th>
+                    <th>Medicine Name</th>
+                    <th>Quantity</th>
+                    <th>Price/Unit</th>
+                    <th>GST (%)</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody id="billBody">
+                <!-- Bill items will be inserted here -->
+            </tbody>
+        </table>
+        <p>Total Amount: <span id="billTotalAmount"></span></p>
+        <button onclick="submitAndPrintBill()">Submit and Print Bill</button>
+    </div>
+
+    <script>
+        let billItems = [];
+        let serialNo = 1;
+        const gstRate = 5; // Assuming a fixed GST rate
+
+        // Handle the transition to the medicine selection
+        document.getElementById('nextStepButton').addEventListener('click', function() {
+            const customerName = document.getElementById('customerName').value;
+            const customerMobile = document.getElementById('customerMobile').value;
+            const customerAge = document.getElementById('customerAge').value;
+            const doctorName = document.getElementById('doctorName').value;
+
+            document.getElementById('billCustomerName').textContent = customerName;
+            document.getElementById('billCustomerMobile').textContent = customerMobile;
+            document.getElementById('billCustomerAge').textContent = customerAge;
+            document.getElementById('billDoctorName').textContent = doctorName;
+
+            document.getElementById('customerForm').style.display = 'none';
+            document.getElementById('sellForm').style.display = 'block';
+        });
+
+        document.getElementById('sellForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const medicineId = document.getElementById('medicineId').value;
+            const medicineName = document.querySelector(`#medicineId option[value="${medicineId}"]`).textContent;
+            const quantitySold = parseInt(document.getElementById('quantitySold').value);
+            const pricePerUnit = parseFloat(document.querySelector(`#medicineId option[value="${medicineId}"]`).dataset.price);
+            const totalAmount = (pricePerUnit * quantitySold) + (gstRate / 100 * pricePerUnit * quantitySold);
+
+            billItems.push({
+                medicineId,
+                slNo: serialNo++,
+                medicineName,
+                quantity: quantitySold,
+                pricePerUnit,
+                gst: gstRate,
+                amount: totalAmount
+            });
+
+            updateBillTable();
+            document.getElementById('bill').style.display = 'block';
+        });
+
+        function updateBillTable() {
+            const billBody = document.getElementById('billBody');
+            billBody.innerHTML = '';
+
+            let totalBillAmount = 0;
+            billItems.forEach(item => {
+                totalBillAmount += item.amount;
+                const row = `<tr>
+                    <td>${item.slNo}</td>
+                    <td>${item.medicineName}</td>
+                    <td>${item.quantity}</td>
+                    <td>${item.pricePerUnit.toFixed(2)}</td>
+                    <td>${item.gst}</td>
+                    <td>${item.amount.toFixed(2)}</td>
+                </tr>`;
+                billBody.insertAdjacentHTML('beforeend', row);
+            });
+
+            document.getElementById('billTotalAmount').textContent = `$${totalBillAmount.toFixed(2)}`;
+        }
+
+        function submitAndPrintBill() {
+            const customerName = document.getElementById('customerName').value;
+            const customerMobile = document.getElementById('customerMobile').value;
+            const customerAge = document.getElementById('customerAge').value;
+            const doctorName = document.getElementById('doctorName').value;
+
+            const soldItems = billItems.map(item => ({
+                medicineId: item.medicineId,
+                quantitySold: item.quantity,
+                customerName,
+                customerMobile,
+            }));
+
+            fetch('/sell-medicine', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    customerName,
+                    customerMobile,
+                    customerAge,
+                    doctorName,
+                    soldItems,
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                printBill();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('There was an issue processing the bill.');
+            });
+        }
+
+        function printBill() {
+            const billContents = document.getElementById('bill').innerHTML;
+            const printWindow = window.open('', '', 'height=400,width=600');
+            printWindow.document.write('<html><head><title>Print Bill</title>');
+            printWindow.document.write('</head><body>');
+            printWindow.document.write(billContents);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        // Filtering function for the medicine selection (placeholder)
+        function filterMedicines() {
+            // Add filtering logic here
+        }
+
+        function updatePrice() {
+            const selectedOption = document.querySelector('#medicineId option:checked');
+            const pricePerUnit = selectedOption ? selectedOption.dataset.price : 0;
+        }
+    </script>
+</body>
+</html>
